@@ -81,7 +81,6 @@ void runMemoryAllocationAlgorithms(vector<MemoryBlock>& memory, vector<int>& pro
     firstFit(memory, processes, internalFragmentation);
     cout << "\nMemory Status after First Fit Algorithm:" << endl;
     printMemoryStatus(memory);
-    cout << endl << "-----------------------------------" << endl;
     printMemoryTable(memory, processes, internalFragmentation);
 
     // Reset memory
@@ -94,7 +93,6 @@ void runMemoryAllocationAlgorithms(vector<MemoryBlock>& memory, vector<int>& pro
     bestFit(memory, processes, internalFragmentation);
     cout << "\nMemory Status after Best Fit Algorithm:" << endl;
     printMemoryStatus(memory);
-    cout << endl << "-----------------------------------" << endl;
     printMemoryTable(memory, processes, internalFragmentation);
 
     // Reset memory
@@ -107,7 +105,6 @@ void runMemoryAllocationAlgorithms(vector<MemoryBlock>& memory, vector<int>& pro
     worstFit(memory, processes, internalFragmentation);
     cout << "\nMemory Status after Worst Fit Algorithm:" << endl;
     printMemoryStatus(memory);
-    cout << endl << "-----------------------------------" << endl;
     printMemoryTable(memory, processes, internalFragmentation);
 
     // Reset memory
@@ -120,7 +117,6 @@ void runMemoryAllocationAlgorithms(vector<MemoryBlock>& memory, vector<int>& pro
     nextFit(memory, processes, internalFragmentation);
     cout << "\nMemory Status after Next Fit Algorithm:" << endl;
     printMemoryStatus(memory);
-    cout << endl << "-----------------------------------" << endl;
     printMemoryTable(memory, processes, internalFragmentation);
 }
 
@@ -159,24 +155,15 @@ void printMemoryStatus(const vector<MemoryBlock>& memory)
 
 void printMemoryTable(const vector<MemoryBlock>& memory, const vector<int>& processes, const vector<int>& internalFragmentation)
 {
-    cout << setw(15) << "Memory Block" << setw(15) << "Status" << setw(30) << "Internal Fragmentation" << endl;
+    cout << setw(15) << "Memory Block" <<  setw(30) << "Internal Fragmentation" << endl;
 
     for(unsigned p = 0; p < max(memory.size(), processes.size()); p++) {
-        cout << setw(15);
+        cout << setw(13);
 
         if(p < memory.size()) {
             cout << memory[p].size << "KB";
         }
 
-        cout << setw(15);
-
-        if(p < memory.size()) {
-            if (p < processes.size() && memory[p].process != UNALLOCATED) {
-                cout << "Allocated";
-            } else {
-                cout << "Unallocated";
-            }
-        }
 
         cout << setw(25);
 
@@ -225,9 +212,9 @@ void bestFit(vector<MemoryBlock>& memory, vector<int>& processes, vector<int>& i
 
         // Iterate through each memory block
         for(unsigned q = 0; q < memory.size(); q++) {
-            // Check if the block has sufficient size, is unallocated, and has the smallest size
-            if (memory[q].size >= processes[p] && memory[q].size - processes[p] < bestFitSize && memory[q].process == UNALLOCATED) {
-                index = p;
+            // Check if the block has sufficient size and is unallocated
+            if (memory[q].size >= processes[p] && (memory[q].size - processes[p] < bestFitSize) && memory[q].process == UNALLOCATED) {
+                index = q;
                 bestFitSize = memory[q].size - processes[p];
             }
         }
@@ -235,13 +222,14 @@ void bestFit(vector<MemoryBlock>& memory, vector<int>& processes, vector<int>& i
         // Allocate the process to the best fitting block, or indicate if allocation is not possible
         if(index != -1) {
             memory[index].process = processes[p]; // Mark the block as used
-            internalFragmentation[index] = memory[index].size - processes[p];
+            internalFragmentation[index] = bestFitSize; // Update internal fragmentation
             cout << "Allocated process " << processes[p] << " in block " << index + 1 << endl;
         } else {
             cout << processes[p] << " cannot be allocated." << endl;
         }
     }
 }
+
 
 void worstFit(vector<MemoryBlock>& memory, vector<int>& processes, vector<int>& internalFragmentation)
 {

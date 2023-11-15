@@ -12,24 +12,27 @@ struct MemoryBlock {
 
 const int UNALLOCATED = -1;
 
-void getInput(vector<MemoryBlock>& memory, vector<int>& processes);
-void runMemoryAllocationAlgorithms(vector<MemoryBlock>& memory, vector<int>& processes);
+void getInput(vector<MemoryBlock>& memory, vector<int>& processes, vector<int>& internalFragmentation);
+void runMemoryAllocationAlgorithms(vector<MemoryBlock>& memory, vector<int>& processes, vector<int>& internalFragmentation);
+
 void printMemoryAndProcesses(const vector<MemoryBlock>& memory, const vector<int>& processes);
 void printMemoryStatus(const vector<MemoryBlock>& memory);
-void firstFit(vector<MemoryBlock>& memory, vector<int>& processes);
-void bestFit(vector<MemoryBlock>& memory, vector<int>& processes);
-void worstFit(vector<MemoryBlock>& memory, vector<int>& processes);
-void nextFit(vector<MemoryBlock>& memory, vector<int>& processes);
+void printMemoryTable(const vector<MemoryBlock>& memory, const vector<int>& processes, const vector<int>& internalFragmentation);
+void firstFit(vector<MemoryBlock>& memory, vector<int>& processes, vector<int>& internalFragmentation);
+void bestFit(vector<MemoryBlock>& memory, vector<int>& processes, vector<int>& internalFragmentation);
+void worstFit(vector<MemoryBlock>& memory, vector<int>& processes, vector<int>& internalFragmentation);
+void nextFit(vector<MemoryBlock>& memory, vector<int>& processes, vector<int>& internalFragmentation);
 
-int main() 
+int main()
 {
     while(true) {
         vector<MemoryBlock> memory;
         vector<int> processes;
+        vector<int> internalFragmentation;
 
-        getInput(memory, processes);
+        getInput(memory, processes, internalFragmentation);
 
-        runMemoryAllocationAlgorithms(memory, processes);
+        runMemoryAllocationAlgorithms(memory, processes, internalFragmentation);
 
         system("pause");
         system("cls");
@@ -38,7 +41,7 @@ int main()
     return 0;
 }
 
-void getInput(vector<MemoryBlock>& memory, vector<int>& processes) 
+void getInput(vector<MemoryBlock>& memory, vector<int>& processes, vector<int>& internalFragmentation)
 {
     int memorySize, processCount;
 
@@ -46,6 +49,7 @@ void getInput(vector<MemoryBlock>& memory, vector<int>& processes)
     cin >> memorySize;
 
     memory.resize(memorySize);
+    internalFragmentation.resize(memorySize, 0);  // Initialize internalFragmentation to 0
 
     cout << "Enter the memory block sizes:" << endl;
     for(int p = 0; p < memorySize; p++) {
@@ -57,7 +61,7 @@ void getInput(vector<MemoryBlock>& memory, vector<int>& processes)
     cout << "Enter the number of processes: ";
     cin >> processCount;
 
-    processes.resize(processCount, 0); // Initialize processes to 0
+    processes.resize(processCount, 0);  // Initialize processes to 0
 
     cout << "Enter the process sizes:" << endl;
     for(int p = 0; p < processCount; p++) {
@@ -66,50 +70,64 @@ void getInput(vector<MemoryBlock>& memory, vector<int>& processes)
     }
 }
 
-void runMemoryAllocationAlgorithms(vector<MemoryBlock>& memory, vector<int>& processes) 
-{
-    printMemoryAndProcesses(memory, processes);
 
+void runMemoryAllocationAlgorithms(vector<MemoryBlock>& memory, vector<int>& processes, vector<int>& internalFragmentation)
+{
     vector<MemoryBlock> initialMemory = memory;
 
+    printMemoryAndProcesses(memory, processes);
+
     cout << "First Fit Algorithm:" << endl;
-    firstFit(memory, processes);
+    firstFit(memory, processes, internalFragmentation);
     cout << "\nMemory Status after First Fit Algorithm:" << endl;
     printMemoryStatus(memory);
     cout << endl << "-----------------------------------" << endl;
+    printMemoryTable(memory, processes, internalFragmentation);
 
     // Reset memory
     memory = initialMemory;
 
+    internalFragmentation.clear();
+    internalFragmentation.resize(memory.size(), 0);
+
     cout << "Best Fit Algorithm:" << endl;
-    bestFit(memory, processes);
+    bestFit(memory, processes, internalFragmentation);
     cout << "\nMemory Status after Best Fit Algorithm:" << endl;
     printMemoryStatus(memory);
     cout << endl << "-----------------------------------" << endl;
+    printMemoryTable(memory, processes, internalFragmentation);
 
     // Reset memory
     memory = initialMemory;
 
+    internalFragmentation.clear();
+    internalFragmentation.resize(memory.size(), 0);
+
     cout << "Worst Fit Algorithm:" << endl;
-    worstFit(memory, processes);
+    worstFit(memory, processes, internalFragmentation);
     cout << "\nMemory Status after Worst Fit Algorithm:" << endl;
     printMemoryStatus(memory);
     cout << endl << "-----------------------------------" << endl;
+    printMemoryTable(memory, processes, internalFragmentation);
 
     // Reset memory
     memory = initialMemory;
 
+    internalFragmentation.clear();
+    internalFragmentation.resize(memory.size(), 0);
+
     cout << "Next Fit Algorithm:" << endl;
-    nextFit(memory, processes);
+    nextFit(memory, processes, internalFragmentation);
     cout << "\nMemory Status after Next Fit Algorithm:" << endl;
     printMemoryStatus(memory);
     cout << endl << "-----------------------------------" << endl;
+    printMemoryTable(memory, processes, internalFragmentation);
 }
 
-void printMemoryAndProcesses(const vector<MemoryBlock>& memory, const vector<int>& processes) 
+void printMemoryAndProcesses(const vector<MemoryBlock>& memory, const vector<int>& processes)
 {
     cout << setw(15) << "Memory Block" << setw(15) << "Processes" << endl;
-    
+
     for(unsigned p = 0; p < max(memory.size(), processes.size()); p++) {
         cout << setw(13);
         if(p < memory.size()) {
@@ -127,10 +145,10 @@ void printMemoryAndProcesses(const vector<MemoryBlock>& memory, const vector<int
     cout << endl;
 }
 
-void printMemoryStatus(const vector<MemoryBlock>& memory) 
+void printMemoryStatus(const vector<MemoryBlock>& memory)
 {
     for(unsigned p = 0; p < memory.size(); p++) {
-        if(memory[p].process != UNALLOCATED) {
+        if (memory[p].process != UNALLOCATED) {
             cout << "[" << memory[p].process << "] ";
         } else {
             cout << "[ ] ";
@@ -139,115 +157,142 @@ void printMemoryStatus(const vector<MemoryBlock>& memory)
     cout << endl;
 }
 
-// First Fit Algorithm:
-// Iterate through each process and find the first memory block that can accommodate it.
-// Allocate the process to the first fitting block, or indicate if allocation is not possible.
-void firstFit(vector<MemoryBlock>& memory, vector<int>& processes) 
+void printMemoryTable(const vector<MemoryBlock>& memory, const vector<int>& processes, const vector<int>& internalFragmentation)
 {
-    for(int p : processes) {
-        int firstFitIndex = -1;
+    cout << setw(15) << "Memory Block" << setw(15) << "Status" << setw(30) << "Internal Fragmentation" << endl;
+
+    for(unsigned p = 0; p < max(memory.size(), processes.size()); p++) {
+        cout << setw(15);
+
+        if(p < memory.size()) {
+            cout << memory[p].size << "KB";
+        }
+
+        cout << setw(15);
+
+        if(p < memory.size()) {
+            if (p < processes.size() && memory[p].process != UNALLOCATED) {
+                cout << "Allocated";
+            } else {
+                cout << "Unallocated";
+            }
+        }
+
+        cout << setw(25);
+
+        if(p < internalFragmentation.size()) {
+            cout << internalFragmentation[p] << "KB";
+        }
+
+        cout << endl;
+    }
+
+    cout << endl;
+}
+
+
+
+void firstFit(vector<MemoryBlock>& memory, vector<int>& processes, vector<int>& internalFragmentation)
+{
+    for (unsigned p = 0; p < processes.size(); p++) {
+        int index = -1;
 
         // Iterate through each memory block
-        for(unsigned q = 0; q < memory.size(); ++q) {
+        for(unsigned q = 0; q < memory.size(); q++) {
             // Check if the block has sufficient size and is unallocated
-            if(memory[q].size >= p && memory[q].process == UNALLOCATED) {
-                firstFitIndex = q;
+            if (memory[q].size >= processes[p] && memory[q].process == UNALLOCATED) {
+                index = q;
                 break;
             }
         }
 
         // Allocate the process to the first fitting block, or indicate if allocation is not possible
-        if(firstFitIndex != -1) {
-            memory[firstFitIndex].process = p;
-            cout << "Allocated process " << p << " in block " << firstFitIndex + 1 << endl;
+        if(index != -1) {
+            memory[index].process = processes[p];
+            internalFragmentation[index] = memory[index].size - processes[p];
+            cout << "Allocated process " << processes[p] << " in block " << index + 1 << endl;
         } else {
-            cout << p << " cannot be allocated." << endl;
+            cout << processes[p] << " cannot be allocated." << endl;
         }
     }
 }
 
-// Best Fit Algorithm:
-// Iterate through each process and find the memory block with the smallest size that can accommodate it.
-// Allocate the process to the best fitting block, or indicate if allocation is not possible.
-void bestFit(vector<MemoryBlock>& memory, vector<int>& processes) 
+void bestFit(vector<MemoryBlock>& memory, vector<int>& processes, vector<int>& internalFragmentation)
 {
-    for(int p : processes) {
-        int bestFitIndex = -1;
+    for(unsigned p = 0; p < processes.size(); p++) {
+        int index = -1;
         int bestFitSize = INT_MAX;
 
         // Iterate through each memory block
         for(unsigned q = 0; q < memory.size(); q++) {
             // Check if the block has sufficient size, is unallocated, and has the smallest size
-            if(memory[q].size >= p && memory[q].size < bestFitSize && memory[q].process == UNALLOCATED) {
-                bestFitIndex = q;
-                bestFitSize = memory[q].size;
+            if (memory[q].size >= processes[p] && memory[q].size - processes[p] < bestFitSize && memory[q].process == UNALLOCATED) {
+                index = p;
+                bestFitSize = memory[q].size - processes[p];
             }
         }
 
         // Allocate the process to the best fitting block, or indicate if allocation is not possible
-        if(bestFitIndex != -1) {
-            memory[bestFitIndex].process = p; // Mark the block as used
-            cout << "Allocated process " << p << " in block " << bestFitIndex + 1 << endl;
+        if(index != -1) {
+            memory[index].process = processes[p]; // Mark the block as used
+            internalFragmentation[index] = memory[index].size - processes[p];
+            cout << "Allocated process " << processes[p] << " in block " << index + 1 << endl;
         } else {
-            cout << p << " cannot be allocated." << endl;
+            cout << processes[p] << " cannot be allocated." << endl;
         }
     }
 }
 
-// Worst Fit Algorithm:
-// Iterate through each process and find the memory block with the largest size that can accommodate it.
-// Allocate the process to the worst fitting block, or indicate if allocation is not possible.
-void worstFit(vector<MemoryBlock>& memory, vector<int>& processes) 
+void worstFit(vector<MemoryBlock>& memory, vector<int>& processes, vector<int>& internalFragmentation)
 {
-    for(int p : processes) {
-        int worstFitIndex = -1;
+    for(unsigned p = 0; p < processes.size(); p++) {
+        int index = -1;
         int worstFitSize = -1;
 
         // Iterate through each memory block
         for(unsigned q = 0; q < memory.size(); q++) {
             // Check if the block has sufficient size, is unallocated, and has the largest size
-            if(memory[q].size >= p && (worstFitIndex == -1 || memory[q].size > worstFitSize) && memory[q].process == UNALLOCATED) {
-                worstFitIndex = q;
-                worstFitSize = memory[q].size;
+            if(memory[q].size >= processes[p] && (index == -1 || memory[q].size - processes[p] > worstFitSize) && memory[q].process == UNALLOCATED) {
+                index = q;
+                worstFitSize = memory[q].size - processes[p];
             }
         }
 
         // Allocate the process to the worst fitting block, or indicate if allocation is not possible
-        if(worstFitIndex != -1) {
-            memory[worstFitIndex].process = p; // Mark the block as used
-            cout << "Allocated process " << p << " in block " << worstFitIndex + 1 << endl;
+        if(index != -1) {
+            memory[index].process = processes[p]; // Mark the block as used
+            internalFragmentation[index] = memory[index].size - processes[p];
+            cout << "Allocated process " << processes[p] << " in block " << index + 1 << endl;
         } else {
-            cout << p << " cannot be allocated." << endl;
+            cout << processes[p] << " cannot be allocated." << endl;
         }
     }
 }
 
-// Next Fit Algorithm:
-// Iterate through each process and find the next memory block that can accommodate it.
-// Allocate the process to the next fitting block, or indicate if allocation is not possible.
-void nextFit(vector<MemoryBlock>& memory, vector<int>& processes) 
+void nextFit(vector<MemoryBlock>& memory, vector<int>& processes, vector<int>& internalFragmentation)
 {
     int lastIndex = 0;
 
-    for(int p : processes) {
+    for(unsigned p = 0; p < processes.size(); p++) {
         int q = lastIndex;
 
         // Iterate through memory blocks in a circular manner starting from the last allocated block
         do {
             // Check if the block has sufficient size and is unallocated
-            if(memory[q].size >= p && memory[q].process == UNALLOCATED) {
-                memory[q].process = p; // Mark the block as used
-                cout << "Allocated process " << p << " in block " << q + 1 << endl;
+            if(memory[q].size >= processes[p] && memory[q].process == UNALLOCATED) {
+                memory[q].process = processes[p]; // Mark the block as used
+                internalFragmentation[q] = memory[q].size - processes[p];
+                cout << "Allocated process " << processes[p] << " in block " << q + 1 << endl;
                 lastIndex = (q + 1) % memory.size();
                 break;
             }
 
             q = (q + 1) % memory.size();
-        } while (q != lastIndex);
+        } while(q != lastIndex);
 
         // Indicate if allocation is not possible
         if(q == lastIndex) {
-            cout << p << " cannot be allocated." << endl;
+            cout << processes[p] << " cannot be allocated." << endl;
         }
     }
 }
